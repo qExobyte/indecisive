@@ -1,0 +1,12 @@
+// automatically converts tsx in \src to js in \dist
+
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "CommonJS",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "esModuleInterop": true,
+    "strict": true
+  }
+}
