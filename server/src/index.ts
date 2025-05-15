@@ -11,7 +11,7 @@ app.use(cors());
 const io = new Server(server, {
     // cors (cross origin resource sharing) middleware tells browser to allow communication between client & server
     cors: {
-        origin: 'http://localhost:3000',
+        origin: 'http://localhost:5173',
         methods: ['GET', 'POST']
     }
 });
@@ -21,18 +21,34 @@ const io = new Server(server, {
 io.on("connection", (socket: Socket) => {
    console.log(`user is in da house: ${socket.id}`);
 
-   socket.on("join_room", (data) => {
-       socket.join(data.room);
+   socket.on("join_room", (room) => {
+       socket.join(room);
    });
 
    // listen for send_msg event, then pass the emitted data into this callback function
    socket.on("send_msg", (data) => {
         socket.to(data.room).emit("receive_msg", data);
    });
+
+    socket.on("disconnect", () => {
+        console.log(`User disconnected: ${socket.id}`);
+    });
 });
 
-// running backend on port 3001
-server.listen(3001, () => {
-    console.log("server is running, poggers");
-})
+
+// running backend on port 3000
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
+
+// // Gracefully close server on CTRL+C or reload
+// process.on('SIGINT', () => {
+//     console.log('Shutting down server...');
+//     server.close(() => {
+//         console.log('Server closed.');
+//         process.exit(0);
+//     });
+// });
+
 
