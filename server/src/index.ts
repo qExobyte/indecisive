@@ -7,11 +7,19 @@ import cors from 'cors';
 const app = express();
 const server = createServer(app);
 
+interface RoomData {
+    player_list: string[];  // list of usernames (could make player object w/ id, username, etc.)
+}
+
+// roomID --> roomData
+let rooms: {[key: string] : RoomData} = {};
+let roomCounter = 1000;
+
 app.use(cors());
 const io = new Server(server, {
     // cors (cross origin resource sharing) middleware tells browser to allow communication between client & server
     cors: {
-        origin: 'http://localhost:5173',
+        origin: 'http://localhost:5175',
         methods: ['GET', 'POST']
     }
 });
@@ -20,6 +28,16 @@ const io = new Server(server, {
 // connection event occurs when user connects to server
 io.on("connection", (socket: Socket) => {
    console.log(`user is in da house: ${socket.id}`);
+
+   socket.on("create_room", (username: string) => {
+       console.log(`Creating room ${roomCounter}`);
+       const room_data : RoomData = {
+           player_list: [username]
+       }
+       socket.join(String(roomCounter));
+       rooms[roomCounter] = room_data;
+       roomCounter++;
+   });
 
    socket.on("join_room", (room) => {
        socket.join(room);

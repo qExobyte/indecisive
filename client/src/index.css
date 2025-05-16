@@ -1,0 +1,16 @@
+@import "tailwindcss";
+/* for some reason not a necessarily import?? also including it causes an (inconsequential) error */
+/*@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap');*/
+
+@theme {
+    --font-bricolage: "Bricolage+Grotesque", "sans-serif";
+}
+
+/* tailwind does not apply any aesthetic difference to h1, h2, h3 */
+h1 {
+    @apply text-6xl font-bold;
+}
+
+h3 {
+    @apply text-2xl font-semibold;
+}

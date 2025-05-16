@@ -16,7 +16,7 @@
   },
   "scripts": {
     "build": "vite build",
-    "dev": "vite",
+    "dev": "npx kill-port 3000 && vite",
     "preview": "vite preview"
   },
   "eslintConfig": {
