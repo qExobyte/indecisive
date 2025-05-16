@@ -36,6 +36,7 @@ io.on("connection", (socket: Socket) => {
        }
        socket.join(String(roomCounter));
        rooms[roomCounter] = room_data;
+       socket.emit("room_created", roomCounter);
        roomCounter++;
    });
 
@@ -48,9 +49,16 @@ io.on("connection", (socket: Socket) => {
         socket.to(data.room).emit("receive_msg", data);
    });
 
-    socket.on("disconnect", () => {
-        console.log(`User disconnected: ${socket.id}`);
-    });
+   socket.on("get_player_list", (roomID: string) => {
+       console.log(`room ID: ${roomID}`);
+       let playerList = rooms[roomID].player_list;
+       console.log(`player list: ${playerList}`);
+       socket.emit("update_player_list", playerList);
+   });
+
+   socket.on("disconnect", () => {
+       console.log(`User disconnected: ${socket.id}`);
+   });
 });
 
 

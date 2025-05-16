@@ -6,9 +6,17 @@
     --font-bricolage: "Bricolage+Grotesque", "sans-serif";
 }
 
+html {
+    font-family: sans-serif;
+}
+
 /* tailwind does not apply any aesthetic difference to h1, h2, h3 */
 h1 {
     @apply text-6xl font-bold;
+}
+
+h2 {
+    @apply text-4xl font-bold;
 }
 
 h3 {
