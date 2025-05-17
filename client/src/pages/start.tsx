@@ -26,6 +26,10 @@ const Start: React.FC = () => {
         socket.emit('create_room', username);
     };
 
+    const roomCodeScreen = () => {
+        navigate(`/room-code`);
+    }
+
     return (
         <div className="min-h-screen flex flex-col items-center justify-start bg-gray-50">
             <div className="mt-24 space-y-8">
@@ -41,8 +45,7 @@ const Start: React.FC = () => {
                     <button onClick={createRoom} className="focus:ring-opacity-75 rounded-md bg-blue-600 px-4 py-2 font-semibold text-white shadow-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none">
                         Create Room
                     </button>
-                    {/* TODO: onclick join room */}
-                    <button className="rounded-md bg-green-600 px-4 py-2 font-semibold text-white shadow-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:outline-none">
+                    <button onClick={roomCodeScreen} className="rounded-md bg-green-600 px-4 py-2 font-semibold text-white shadow-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:outline-none">
                         Join Room
                     </button>
                 </div>
