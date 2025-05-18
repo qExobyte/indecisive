@@ -28,6 +28,10 @@ const RoomCode = () => {
         socket.emit('attempt_join_room', roomID, username);
     };
 
+    const backToStart = () => {
+        navigate('/');
+    };
+
     return (
         <div className="min-h-screen flex flex-col items-center justify-start bg-gray-50">
             <div className="mt-24 space-y-8">
@@ -39,7 +43,11 @@ const RoomCode = () => {
                     />
                     <h4 className="mt-4">{error}</h4>
                 </div>
-                <div className="flex flex-col items-center">
+
+                <div className="flex justify-center space-x-4">
+                    <button onClick={backToStart} className="rounded-md bg-red-600 px-4 py-2 font-semibold text-white shadow-md hover:bg-red-700 focus:ring-2 focus:ring-green-500 focus:outline-none">
+                        Back
+                    </button>
                     <button onClick={joinRoom} className="rounded-md bg-green-600 px-4 py-2 font-semibold text-white shadow-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:outline-none">
                         Join Room
                     </button>

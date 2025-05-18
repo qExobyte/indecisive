@@ -52,7 +52,7 @@ const Lobby = () => {
                 Start
             </button>
 
-            <button onClick={leaveLobby} className="w-full max-w-sm bg-red-500 text-white font-semibold py-2 rounded-xl hover:bg-red-600 transition hover:scale-30 ease duration-7000">
+            <button onClick={leaveLobby} className="w-full max-w-sm bg-red-500 text-white font-semibold py-2 rounded-xl hover:bg-red-700 hover:scale-103">
                 Leave Room
             </button>
         </div>
