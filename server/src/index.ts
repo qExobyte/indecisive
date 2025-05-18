@@ -9,6 +9,7 @@ const server = createServer(app);
 
 interface RoomData {
     player_set: Set<string>;  // set of usernames (could make player object w/ id, username, etc.)
+    can_join: boolean;
 }
 
 // roomID --> roomData
@@ -30,28 +31,45 @@ io.on("connection", (socket: Socket) => {
    console.log(`user is in da house: ${socket.id}`);
 
    socket.on("create_room", (username: string) => {
-       console.log(`Creating room ${roomCounter}`);
-       rooms[String(roomCounter)] = {
-           player_set: new Set<string>([username])
-       };
-       socket.join(String(roomCounter));
-       socket.emit("room_created", roomCounter);
-       roomCounter++;
+       // check for blank/whitespace username
+       if (!username.trim()) {
+            socket.emit("fail_to_create_room");
+       }
+       else {
+           console.log(`Creating room ${roomCounter}`);
+           rooms[String(roomCounter)] = {
+               player_set: new Set<string>([username]),
+               can_join: true
+           };
+           let roomID = String(roomCounter);
+           socket.join(roomID);
+           socket.emit("room_created", roomID);
+           socket.emit("update_player_list", Array.from(rooms[roomID].player_set));
+           roomCounter++;
+       }
    });
 
    socket.on("attempt_join_room", (room, username) => {
-       // TODO see if room already started - give roomData boolean flag
-       console.log("room", room);
-       console.log(rooms[room]);
-       console.log(rooms[room].player_set);
-       rooms[room].player_set.add(username);
-       socket.emit("send_to_room", room, username);
-       io.to(room).emit("update_player_list", Array.from(rooms[room].player_set));
+       if ((room in rooms) && rooms[room].can_join) {
+           rooms[room].player_set.add(username);
+           socket.join(room);
+           socket.emit("send_to_room", room);
+           // io.to(room) doesn't ensure that the player is in the room before running so it may cause problems
+           // therefore, run socket.emit for player and io.to(room) for players already in room
+           socket.emit("update_player_list", Array.from(rooms[room].player_set));
+           io.to(room).emit("update_player_list", Array.from(rooms[room].player_set));
+       }
+       else {
+           const error_msg = "Invalid room code";
+           socket.emit("fail_to_join_room", error_msg);
+       }
    });
 
    socket.on("leave_room", (room, username) => {
        socket.leave(room);
        rooms[room].player_set.delete(username);
+       console.log(Array.from(rooms[room].player_set));
+       io.to(room).emit("update_player_list", Array.from(rooms[room].player_set));
    })
 
    // listen for send_msg event, then pass the emitted data into this callback function
@@ -60,9 +78,7 @@ io.on("connection", (socket: Socket) => {
    });
 
    socket.on("get_player_list", (roomID: string) => {
-       console.log(`room ID: ${roomID}`);
        let playerList = rooms[roomID].player_set;
-       console.log(`player list: ${playerList}`);
        socket.emit("update_player_list", Array.from(playerList));
    });
 
@@ -72,19 +88,9 @@ io.on("connection", (socket: Socket) => {
 });
 
 
-// running backend on port 3000
+// running backend on port 3000 TODO is this necessary?
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
-
-// // Gracefully close server on CTRL+C or reload
-// process.on('SIGINT', () => {
-//     console.log('Shutting down server...');
-//     server.close(() => {
-//         console.log('Server closed.');
-//         process.exit(0);
-//     });
-// });
-
 

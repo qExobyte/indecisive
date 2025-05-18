@@ -9,16 +9,20 @@ const Lobby = () => {
     const [players, setPlayers] = useState<Set<string>>(new Set());
 
     useEffect(() => {
-        socket.emit("get_player_list", roomID);
-
-        socket.on("update_player_list", (playerList: string[]) => {
+        const handleUpdate = (playerList: string[]) => {
             setPlayers(new Set(playerList));
-        });
+        };
+
+        socket.emit('get_player_list', roomID);
+
+        // handling with a separate function allows for proper cleanup
+        // trust
+        socket.on("update_player_list", handleUpdate);
 
         return () => {
-            socket.off('update_player_list');
+            socket.off('update_player_list', handleUpdate);
         };
-    }, [roomID]);
+    }, [socket, roomID]);
 
     const startGame = () => {
         socket.emit('start_writing', roomID);
@@ -27,7 +31,7 @@ const Lobby = () => {
 
     const leaveLobby = () => {
         socket.emit('leave_room', roomID, username);
-        alert("left room lol"); // TODO implement
+        navigate(`/room-code`);
     }
 
     return (
@@ -48,7 +52,7 @@ const Lobby = () => {
                 Start
             </button>
 
-            <button onClick={leaveLobby} className="w-full max-w-sm bg-red-500 text-white font-semibold py-2 rounded-xl hover:bg-red-600 transition hover:scale-30 transition ease duration-7000">
+            <button onClick={leaveLobby} className="w-full max-w-sm bg-red-500 text-white font-semibold py-2 rounded-xl hover:bg-red-600 transition hover:scale-30 ease duration-7000">
                 Leave Room
             </button>
         </div>
