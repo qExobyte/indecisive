@@ -3,6 +3,8 @@ import {createContext, ReactNode, useContext, useState} from 'react';
 // context is react's way of storing state globally
 // I want the following states & setters to be accessible globally (across all pages)
 interface UserContextType {
+    id: string | undefined;
+    setID: (value: string | undefined) => void;
     username: string;
     setUsername: (value: string) => void;
     roomID: string;
@@ -15,9 +17,10 @@ const UserContext = createContext<UserContextType | null>(null);
 export const UserProvider = ({ children }: { children : ReactNode }) => {
     const [username, setUsername] = useState('');
     const [roomID, setRoomID] = useState('');
+    const [id, setID] = useState<string | undefined>(undefined);
 
     return (
-        <UserContext.Provider value={{ username, setUsername, roomID, setRoomID }}>
+        <UserContext.Provider value={{ id, setID, username, setUsername, roomID, setRoomID }}>
             {children}
         </UserContext.Provider>
     );

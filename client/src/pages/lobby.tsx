@@ -4,24 +4,18 @@ import {useState, useEffect} from "react";
 import {socket} from "../socket";
 
 const Lobby = () => {
-    const {roomID, username} = useUser();
+    const {roomID} = useUser();
     const navigate = useNavigate();
-    const [players, setPlayers] = useState<Set<string>>(new Set());
+    const [usernames, setUsernames] = useState<string[]>([]);
 
     useEffect(() => {
-        const handleUpdate = (playerList: string[]) => {
-            setPlayers(new Set(playerList));
-        };
-
         socket.emit('get_player_list', roomID);
 
         // handling with a separate function allows for proper cleanup
         // trust
-        socket.on("update_player_list", handleUpdate);
-
-        return () => {
-            socket.off('update_player_list', handleUpdate);
-        };
+        socket.on("update_player_list", (username_list: string[]) => {
+            setUsernames(username_list);
+        });
     }, [socket, roomID]);
 
     const startGame = () => {
@@ -30,7 +24,7 @@ const Lobby = () => {
     }
 
     const leaveLobby = () => {
-        socket.emit('leave_room', roomID, username);
+        socket.emit('leave_room', roomID, socket.id);
         navigate(`/room-code`);
     }
 
@@ -40,7 +34,7 @@ const Lobby = () => {
 
             <div className="w-full max-w-md bg-white rounded-2xl shadow p-4 mb-6">
                 <ul className="space-y-2">
-                    {[...players].map((name, i) => (
+                    {usernames.map((name, i) => (
                         <li key={i} className="px-4 py-2 rounded text-center font-medium">
                             {name}
                         </li>

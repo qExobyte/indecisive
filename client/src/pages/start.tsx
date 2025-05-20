@@ -4,13 +4,14 @@ import { socket } from '../socket';
 import {useUser} from "../userContext";
 
 const Start: React.FC = () => {
-    const {username, setUsername,  setRoomID} = useUser();
+    const {setID, username, setUsername,  setRoomID} = useUser();
     const navigate = useNavigate();
     const [error, setError] = useState("");
 
     // useEffect runs when THIS SPECIFIC COMPONENT (in this case this page) loads
     useEffect(() => {
         socket.connect();
+        setID(socket.id);
 
         socket.on('room_created', (roomId: string) => {
             setRoomID(roomId);
