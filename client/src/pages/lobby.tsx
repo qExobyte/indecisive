@@ -18,6 +18,17 @@ const Lobby = () => {
         });
     }, [socket, roomID]);
 
+    useEffect(() => {
+        socket.on("disconnect", () => {
+            console.log("printy print");
+            navigate("/");
+        });
+
+        return () => {
+            socket.off("disconnect");
+        };
+    }, [socket]);
+
     const startGame = () => {
         socket.emit('start_writing', roomID);
         alert("game starting"); // TODO implement
@@ -25,7 +36,7 @@ const Lobby = () => {
 
     const leaveLobby = () => {
         socket.emit('leave_room', roomID, socket.id);
-        navigate(`/room-code`);
+        navigate(`/`);
     }
 
     return (

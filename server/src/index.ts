@@ -2,6 +2,7 @@ import express from 'express';
 import {createServer} from 'http';
 import {Server, Socket} from 'socket.io'; // server is a class
 import cors from 'cors';
+import {randomUUID} from "node:crypto";
 
 // creates app and server
 const app = express();
@@ -33,27 +34,88 @@ const io = new Server(server, {
     }
 });
 
+// map: session id --> player id, since session id preserves on refresh
+const session_ids_to_player_ids: {[key: string] : string} = {};
+
+declare module "socket.io" {
+    interface Socket {
+        sessionID: string;
+    }
+}
+
+// io.use is a middleware function (mediator between server & client)
+// client initiates connection --> io.use is triggered --> "connection" is triggered
+
+io.use((socket, next) => {
+    // this gets the sessionID held in session storage from auth in App.tsx
+    const sessionID = socket.handshake.auth.sessionID;
+    console.log(`---------------\nsessionID: ${sessionID}`);
+    console.log(session_ids_to_player_ids);
+    // if already stored (meaning this is a reconnect)
+    if (sessionID && sessionID in session_ids_to_player_ids) {
+        const oldPID = session_ids_to_player_ids[sessionID];
+        player_dict[socket.id] = player_dict[oldPID];  // copy contents from oldPID to newPID
+        console.log(`current id: ${socket.id}`);
+        console.log(`so now player dict for id is ${JSON.stringify(player_dict, null, 2)}`)
+        // update the room to replace the old pid with the new pid
+        if (player_dict[oldPID].roomID) {
+            const old_roomID = player_dict[oldPID].roomID
+            const index = room_dict[old_roomID].player_IDs.indexOf(oldPID);
+            room_dict[old_roomID].player_IDs[index] = socket.id;
+            console.log(`so now room dict is ${JSON.stringify(room_dict, null, 2)}`)
+        }
+        delete player_dict[oldPID];
+        socket.sessionID = sessionID;
+    }
+    else {
+        const newSessionID = randomUUID();
+        console.log(`getting newID: ${newSessionID}`);
+        socket.sessionID = newSessionID;
+    }
+    session_ids_to_player_ids[socket.sessionID] = socket.id;
+    return next();
+});
+
 // .on listens for an event
 // connection event occurs when user connects to server
 io.on("connection", (socket: Socket) => {
    console.log(`user is in da house: ${socket.id}`);
-   player_dict[socket.id] = {
-       username: "",
-       isHost: false,
-       roomID: undefined
-   }
 
-   function updatePlayerList(roomID: string) {
-       const username_list = room_dict[roomID].player_IDs.map(
+   console.log(`sending ${socket.sessionID} to client`);
+   if (socket.sessionID) socket.emit("session", socket.sessionID);
+
+   // because we might be reconnecting
+    console.log(player_dict[socket.id]);
+    if (!player_dict[socket.id]) {
+        console.log("Should NOT print on refresh");
+        player_dict[socket.id] = {
+            username: "",
+            isHost: false,
+            roomID: undefined
+        };
+    }
+    else {
+        const roomID = player_dict[socket.id].roomID;
+        if (roomID) {
+            updatePlayerList(roomID);
+        }
+    }
+
+    function updatePlayerList(roomID: string) {
+        if (!roomID) return;
+        console.log(`rooms dict: ${JSON.stringify(room_dict, null, 2)}`);
+        console.log(`player dict: ${JSON.stringify(player_dict, null, 2)}`);
+        const username_list = room_dict[roomID].player_IDs.map(
             pid => player_dict[pid].username
-       );
-       socket.emit("update_player_list", username_list);
-       io.to(roomID).emit("update_player_list", username_list);
-   }
+        );
+        socket.emit("update_player_list", username_list);
+        io.to(roomID).emit("update_player_list", username_list);
+    }
 
-   function removePlayerFromRoom(roomID: string) {
-       room_dict[roomID].player_IDs = room_dict[roomID].player_IDs.filter(id => id !== socket.id);
-   }
+    function removePlayerFromRoom(roomID: string) {
+        if (!roomID) return;
+        room_dict[roomID].player_IDs = room_dict[roomID].player_IDs.filter(id => id !== socket.id);
+    }
 
    socket.on("create_room", (username: string) => {
        // check for blank/whitespace username
@@ -111,15 +173,20 @@ io.on("connection", (socket: Socket) => {
        updatePlayerList(roomID);
    });
 
+   // when this is called, socket is already undefined
    socket.on("disconnect", () => {
-       console.log(`User disconnected: ${socket.id}`);
-       const player_room = player_dict[socket.id].roomID;
-       console.log(`Disconnecting and room: ${player_room}`);
-       delete player_dict[socket.id];
-       if (player_room) {
-           removePlayerFromRoom(player_room);
-           updatePlayerList(player_room);
-       }
+       const sessionID = socket.sessionID;
+       setTimeout(() => {
+           const isReconnected = Object.values(session_ids_to_player_ids).includes(sessionID);
+           if (!isReconnected) {
+               const player_room = player_dict[socket.id]?.roomID;
+               delete player_dict[socket.id];
+               if (player_room) {
+                   removePlayerFromRoom(player_room);
+                   updatePlayerList(player_room);
+               }
+           }
+       }, 5000); // 5-second grace period in case of refresh
    });
 });
 

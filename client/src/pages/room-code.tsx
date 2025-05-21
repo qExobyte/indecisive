@@ -39,7 +39,10 @@ const RoomCode = () => {
                     <input
                         placeholder="Room Code"
                         className="w-full px-4 py-2 border font-bricolage border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                        onChange={(event) => setRoomID(event.target.value)}
+                        onChange={(event) => {
+                            setRoomID(event.target.value);
+                            sessionStorage.setItem("roomID", event.target.value);
+                        }}
                     />
                     <h4 className="mt-4">{error}</h4>
                 </div>

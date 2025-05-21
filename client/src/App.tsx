@@ -3,10 +3,13 @@ import { UserProvider } from './userContext';
 import Start from './pages/start';
 import Lobby from './pages/lobby';
 import RoomCode from "./pages/room-code";
+import SessionManager from "./sessionManager";
 
 const App: React.FC = () => {
+
     return (
         <UserProvider>
+            <SessionManager />
             <Router>
                 <Routes>
                     <Route path="/" element={<Start />} />

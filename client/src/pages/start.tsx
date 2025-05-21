@@ -15,6 +15,7 @@ const Start: React.FC = () => {
 
         socket.on('room_created', (roomId: string) => {
             setRoomID(roomId);
+            sessionStorage.setItem("roomID", roomId);
             navigate(`/lobby/${roomId}`);
         });
 
