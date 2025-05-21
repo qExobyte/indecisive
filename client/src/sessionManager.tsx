@@ -16,7 +16,7 @@ const SessionManager = () => {
 
         socket.on("session", (sessionID) => {
             sessionStorage.setItem("sessionID", sessionID);
-            console.log(`retrieved sessionID: ${sessionID}`);
+            console.log(`Retrieved sessionID from storage: ${sessionID}`);
         });
 
         return () => {

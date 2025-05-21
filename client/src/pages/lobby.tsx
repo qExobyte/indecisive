@@ -11,16 +11,20 @@ const Lobby = () => {
     useEffect(() => {
         socket.emit('get_player_list', roomID);
 
-        // handling with a separate function allows for proper cleanup
-        // trust
-        socket.on("update_player_list", (username_list: string[]) => {
+        const handleUpdate = (username_list: string[]) => {
             setUsernames(username_list);
-        });
+            console.log("🚀 update_player_list received", username_list);
+        };
+
+        socket.on("update_player_list", handleUpdate);
+
+        return () => {
+            socket.off("update_player_list", handleUpdate);
+        };
     }, [socket, roomID]);
 
     useEffect(() => {
         socket.on("disconnect", () => {
-            console.log("printy print");
             navigate("/");
         });
 
