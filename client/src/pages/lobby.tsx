@@ -24,6 +24,10 @@ const Lobby = () => {
     }, [socket, roomID]);
 
     useEffect(() => {
+        socket.on("open_write_screen", (roomID) => {
+            navigate(`/write/${roomID}`);
+        })
+
         socket.on("disconnect", () => {
             navigate("/");
         });
@@ -35,7 +39,6 @@ const Lobby = () => {
 
     const startGame = () => {
         socket.emit('start_writing', roomID);
-        alert("game starting"); // TODO implement
     }
 
     const leaveLobby = () => {

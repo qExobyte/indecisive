@@ -104,8 +104,7 @@ io.on("connection", (socket: Socket) => {
 
     function updatePlayerList(roomID: string) {
         if (!roomID) return;
-        console.log(`-----------
-Updating player list: ${JSON.stringify(room_dict)}`)
+        console.log(`-----------Updating player list: ${JSON.stringify(room_dict)}`)
         const username_list = room_dict[roomID].player_IDs.map(
             pid => player_dict[pid].username
         );
@@ -174,6 +173,10 @@ Updating player list: ${JSON.stringify(room_dict)}`)
    socket.on("get_player_list", (roomID: string) => {
        updatePlayerList(roomID);
    });
+
+   socket.on("start_writing", (roomID: string) => {
+       io.to(roomID).emit("open_write_screen", roomID);
+   })
 
    // when this is called, socket is already undefined
     socket.on("disconnect", () => {
