@@ -23,6 +23,10 @@ interface RoomData {
 const room_dict: {[key: string] : RoomData} = {};
 let roomCounter = 1000;
 
+// key: roomID -> val: {timerID, timerCount}
+const timers: {[key: string] : {timerID: NodeJS.Timeout | number | undefined | string, timerCount: number}} = {};
+const TIMER_COUNT = 30;
+
 const player_dict: {[key: string] : Player} = {};
 
 app.use(cors());
@@ -175,8 +179,27 @@ io.on("connection", (socket: Socket) => {
    });
 
    socket.on("start_writing", (roomID: string) => {
+       timers[roomID] = {timerID: undefined, timerCount: TIMER_COUNT};
        io.to(roomID).emit("open_write_screen", roomID);
-   })
+       startTimer(roomID);
+   });
+
+   function startTimer(roomID: string) {
+      if (!timers[roomID]) {
+          console.log("Room was not given timer"); // really should not happen
+          return;
+      }
+      timers[roomID].timerID = setInterval(() => {
+          timers[roomID].timerCount--;
+          io.to(roomID).emit('update_timer', timers[roomID].timerCount);
+
+          if (timers[roomID].timerCount <= 0) {
+              clearInterval(timers[roomID].timerID);
+              io.to(roomID).emit('open_rank_screen', roomID);
+              delete timers[roomID];
+          }
+      }, 1000);
+   }
 
    // when this is called, socket is already undefined
     socket.on("disconnect", () => {

@@ -1,5 +1,7 @@
-import React, { useState, KeyboardEvent, DragEvent } from 'react';
+import React, {useState, KeyboardEvent, DragEvent, useEffect} from 'react';
 import TrashIcon from '../assets/trash.svg';
+import {socket} from "../socket";
+import {useNavigate} from "react-router-dom";
 
 const Write = () => {
     // current idea input
@@ -7,6 +9,8 @@ const Write = () => {
     // list of ideas
     const [ideas, setIdeas] = useState<string[]>([]);
     const [isDraggingOverTrash, setIsDraggingOverTrash] = useState<boolean>(false);
+    const [timerCount, setTimerCount] = useState<number>(30);
+    const navigate = useNavigate();
 
     // Function to handle the input field's key down events
     const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -56,6 +60,16 @@ const Write = () => {
         setIdeas(currentIdeas => currentIdeas.filter((_, i) => i !== draggedIndex));
     };
 
+    useEffect(() => {
+        socket.on("update_timer", (timerCount: number) => {
+            setTimerCount(timerCount);
+        });
+
+        socket.on("open_rank_screen", (roomID) => {
+            navigate(`/rank/${roomID}`);
+        });
+    }, [])
+
     return (
         // Main container for the entire application, centered vertically and horizontally
         <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4 font-inter">
@@ -67,7 +81,7 @@ const Write = () => {
             {/* Timer display (indigo circle with number 30) */}
             <div className="relative mb-8">
                 <div className="w-24 h-24 sm:w-28 sm:h-28 bg-indigo-600 rounded-full flex items-center justify-center shadow-lg">
-                    <span className="text-white text-5xl font-extrabold">30</span>
+                    <span className="text-white text-5xl font-extrabold">{timerCount}</span>
                 </div>
                 {/* Less aggressive pulse animation using animate-pulse */}
                 <span className="animate-pulse absolute inset-0 inline-flex h-full w-full rounded-full bg-indigo-400 opacity-50"></span>
