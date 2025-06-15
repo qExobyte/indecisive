@@ -1,0 +1,7 @@
+const Rank = () => {
+    return (
+      <h1>test</h1>
+    );
+};
+
+export default Rank;

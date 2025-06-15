@@ -74,6 +74,10 @@ const Write = () => {
             setTimerCount(timerCount);
         });
 
+        socket.on("request_ideas", (roomID) => {
+           socket.emit("submit_ideas", roomID, ideas);
+        });
+
         socket.on("open_rank_screen", (roomID) => {
             navigate(`/rank/${roomID}`);
             sessionStorage.removeItem("ideas");

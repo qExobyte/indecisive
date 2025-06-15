@@ -17,6 +17,7 @@ interface Player {
 interface RoomData {
     player_IDs: string[];  // set of player IDs (then use lookup table)
     can_join: boolean;
+    ideas_list: string[];
 }
 
 // roomID --> roomData
@@ -25,9 +26,11 @@ let roomCounter = 1000;
 
 // key: roomID -> val: {timerID, timerCount}
 const timers: {[key: string] : {timerID: NodeJS.Timeout | number | undefined | string, timerCount: number}} = {};
-const TIMER_COUNT = 30;
+const TIMER_COUNT = 15;
 
 const player_dict: {[key: string] : Player} = {};
+
+let expected_idea_responses = 0;
 
 app.use(cors());
 const io = new Server(server, {
@@ -136,7 +139,8 @@ io.on("connection", (socket: Socket) => {
 
            room_dict[roomID] = {
                player_IDs: [socket.id],
-               can_join: true
+               can_join: true,
+               ideas_list: []
            };
 
            socket.emit("room_created", roomID);
@@ -194,12 +198,24 @@ io.on("connection", (socket: Socket) => {
           io.to(roomID).emit('update_timer', timers[roomID].timerCount);
 
           if (timers[roomID].timerCount <= 0) {
+              io.to(roomID).emit('request_ideas', roomID);
+              expected_idea_responses = room_dict[roomID].player_IDs.length;
               clearInterval(timers[roomID].timerID);
-              io.to(roomID).emit('open_rank_screen', roomID);
-              delete timers[roomID];
           }
       }, 1000);
    }
+
+   socket.on("submit_ideas", (roomID, ideas_list) => {
+       if (!room_dict[roomID].ideas_list) {
+           ideas_list = [];
+       }
+       room_dict[roomID].ideas_list.push(...ideas_list);
+       expected_idea_responses--;
+       if (expected_idea_responses === 0) {
+           io.to(roomID).emit('open_rank_screen', roomID);
+           delete timers[roomID];
+       }
+   });
 
    // when this is called, socket is already undefined
     socket.on("disconnect", () => {
