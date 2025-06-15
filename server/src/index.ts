@@ -18,6 +18,7 @@ interface RoomData {
     player_IDs: string[];  // set of player IDs (then use lookup table)
     can_join: boolean;
     ideas_list: string[];
+    expected_idea_responses: number;
 }
 
 // roomID --> roomData
@@ -29,8 +30,6 @@ const timers: {[key: string] : {timerID: NodeJS.Timeout | number | undefined | s
 const TIMER_COUNT = 15;
 
 const player_dict: {[key: string] : Player} = {};
-
-let expected_idea_responses = 0;
 
 app.use(cors());
 const io = new Server(server, {
@@ -140,7 +139,8 @@ io.on("connection", (socket: Socket) => {
            room_dict[roomID] = {
                player_IDs: [socket.id],
                can_join: true,
-               ideas_list: []
+               ideas_list: [],
+               expected_idea_responses: 0
            };
 
            socket.emit("room_created", roomID);
@@ -199,20 +199,24 @@ io.on("connection", (socket: Socket) => {
 
           if (timers[roomID].timerCount <= 0) {
               io.to(roomID).emit('request_ideas', roomID);
-              expected_idea_responses = room_dict[roomID].player_IDs.length;
+              room_dict[roomID].expected_idea_responses = room_dict[roomID].player_IDs.length;
               clearInterval(timers[roomID].timerID);
           }
       }, 1000);
    }
 
-   socket.on("submit_ideas", (roomID, ideas_list) => {
+   socket.on("submit_ideas", (roomID, ideas_list: string[]) => {
        if (!room_dict[roomID].ideas_list) {
            ideas_list = [];
        }
+       console.log(`ideas: ${ideas_list}`);
+       console.log(`room_dict[roomID].ideas_list: ${room_dict[roomID].ideas_list}`);
        room_dict[roomID].ideas_list.push(...ideas_list);
-       expected_idea_responses--;
-       if (expected_idea_responses === 0) {
-           io.to(roomID).emit('open_rank_screen', roomID);
+       room_dict[roomID].expected_idea_responses--;
+       if (room_dict[roomID].expected_idea_responses === 0) {
+           io.to(roomID).emit('open_rank_screen', roomID, room_dict[roomID].ideas_list);
+           console.log(`Number of ideas: ${room_dict[roomID].ideas_list.length}`);
+           console.log(room_dict[roomID].ideas_list);
            delete timers[roomID];
        }
    });

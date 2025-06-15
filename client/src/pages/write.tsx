@@ -22,6 +22,8 @@ const Write = () => {
             setIdeas([...ideas, ideaInput.trim()]);
             // must stringify since sessionstorage only stores strings
             sessionStorage.setItem("ideas", JSON.stringify([...ideas, ideaInput.trim()]));
+            console.log(`Updating ideas to ${JSON.stringify([...ideas, ideaInput.trim()])}`);
+            console.log(`Updated ideas to ${JSON.stringify(ideas)}`);
             setIdeaInput('');
         }
     };
@@ -75,19 +77,25 @@ const Write = () => {
         });
 
         socket.on("request_ideas", (roomID) => {
-           socket.emit("submit_ideas", roomID, ideas);
+            console.log(`Submitting ideas: ${JSON.stringify(ideas)} for room ${roomID}`);
+            const currentIdeas = JSON.parse(sessionStorage.getItem("ideas") || "[]");
+            socket.emit("submit_ideas", roomID, currentIdeas);
         });
 
-        socket.on("open_rank_screen", (roomID) => {
-            navigate(`/rank/${roomID}`);
+        socket.on("open_rank_screen", (roomID, ideas_list) => {
+            navigate(`/rank/${roomID}`, {
+                // state is associated with the URL using react's useLocation
+                state: { ideas_list }
+            });
             sessionStorage.removeItem("ideas");
         });
 
         return () => {
             socket.off("update_timer");
+            socket.off("request_ideas");
             socket.off("open_rank_screen");
         }
-    }, [])
+    }, [navigate])
 
     return (
         // Main container for the entire application, centered vertically and horizontally
