@@ -228,11 +228,13 @@ io.on("connection", (socket: Socket) => {
        room_dict[roomID].expected_rank_responses--;
        // points awarded in reverse of rank (ex. 5 items: 1st is +5, 2nd is +4 etc.)
        for (let i = 0; i < rank_list.length; i++) {
-           const idea = room_dict[roomID].ideas_list[i];
+           console.log(`${i}th item: ${rank_list[i]}`);
+           const idea = rank_list[i];
            const points = rank_list.length - i;
            // handle if item DNE yet
            room_dict[roomID].points_dict[idea] ??= 0;
            room_dict[roomID].points_dict[idea] += points;
+           console.log(`points for ${idea}: ${points}`);
        }
        if (room_dict[roomID].expected_rank_responses === 0) {
            io.to(roomID).emit('open_results_screen', roomID, room_dict[roomID].points_dict);
