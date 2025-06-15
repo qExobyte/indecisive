@@ -6,6 +6,7 @@ import RoomCode from "./pages/room-code";
 import SessionManager from "./sessionManager";
 import Write from "./pages/write";
 import Rank from "./pages/ranking";
+import Results from "./pages/results";
 
 const App: React.FC = () => {
 
@@ -19,6 +20,7 @@ const App: React.FC = () => {
                     <Route path="/room-code" element={<RoomCode />} />
                     <Route path="/write/:room_id" element={<Write />} />
                     <Route path={"/rank/:room_id"} element={<Rank />} />
+                    <Route path={"/results/:room_id"} element={<Results />} />
                 </Routes>
             </Router>
         </UserProvider>

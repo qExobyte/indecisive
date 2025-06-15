@@ -3,14 +3,17 @@ import {
     DragDropContext,
     Droppable,
     Draggable,
-    DroppableStateSnapshot,
     DropResult,
     DraggableProvided
 } from '@hello-pangea/dnd';
-import {useLocation} from "react-router-dom";
+import {useLocation, useNavigate} from "react-router-dom";
+import {socket} from "../socket";
+import {useUser} from "../userContext";
 
 const Rank = () => {
     const location = useLocation();
+    const navigate = useNavigate();
+    const {roomID} = useUser();
     const ideas_list = location.state?.ideas_list || [];
 
     const [ideas, setIdeas] = useState<string[]>(ideas_list);
@@ -41,14 +44,21 @@ const Rank = () => {
     const handleConfirm = () => {
         setIsWaiting(true);
         sessionStorage.setItem("waitingOnRankScreen", "true");
-        // TODO
+        socket.emit("submit_rank", roomID, ideas);
     }
 
     useEffect(() => {
         if (sessionStorage.getItem("waitingOnRankScreen") === "true") {
             setIsWaiting(true);
         }
-    })
+
+        socket.on("open_results_screen", (roomID, points_dict : {[key: string] : number}) => {
+            navigate(`/results/${roomID}`, {
+                state: { points_dict }
+            });
+            sessionStorage.removeItem("waitingOnRankScreen");
+        });
+    }, [navigate])
 
     // @ts-ignore
     return (

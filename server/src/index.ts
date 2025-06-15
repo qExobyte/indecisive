@@ -19,6 +19,8 @@ interface RoomData {
     can_join: boolean;
     ideas_list: string[];
     expected_idea_responses: number;
+    expected_rank_responses: number;
+    points_dict: {[key: string] : number};  // ideas -> points (where points are inverse of ranking)
 }
 
 // roomID --> roomData
@@ -140,7 +142,9 @@ io.on("connection", (socket: Socket) => {
                player_IDs: [socket.id],
                can_join: true,
                ideas_list: [],
-               expected_idea_responses: 0
+               expected_idea_responses: 0,
+               expected_rank_responses: 0,
+               points_dict: {}
            };
 
            socket.emit("room_created", roomID);
@@ -200,6 +204,7 @@ io.on("connection", (socket: Socket) => {
           if (timers[roomID].timerCount <= 0) {
               io.to(roomID).emit('request_ideas', roomID);
               room_dict[roomID].expected_idea_responses = room_dict[roomID].player_IDs.length;
+              room_dict[roomID].expected_rank_responses = room_dict[roomID].player_IDs.length;
               clearInterval(timers[roomID].timerID);
           }
       }, 1000);
@@ -215,9 +220,22 @@ io.on("connection", (socket: Socket) => {
        room_dict[roomID].expected_idea_responses--;
        if (room_dict[roomID].expected_idea_responses === 0) {
            io.to(roomID).emit('open_rank_screen', roomID, room_dict[roomID].ideas_list);
-           console.log(`Number of ideas: ${room_dict[roomID].ideas_list.length}`);
-           console.log(room_dict[roomID].ideas_list);
            delete timers[roomID];
+       }
+   });
+
+   socket.on("submit_rank", (roomID, rank_list: string[]) => {
+       room_dict[roomID].expected_rank_responses--;
+       // points awarded in reverse of rank (ex. 5 items: 1st is +5, 2nd is +4 etc.)
+       for (let i = 0; i < rank_list.length; i++) {
+           const idea = room_dict[roomID].ideas_list[i];
+           const points = rank_list.length - i;
+           // handle if item DNE yet
+           room_dict[roomID].points_dict[idea] ??= 0;
+           room_dict[roomID].points_dict[idea] += points;
+       }
+       if (room_dict[roomID].expected_rank_responses === 0) {
+           io.to(roomID).emit('open_results_screen', roomID, room_dict[roomID].points_dict);
        }
    });
 
