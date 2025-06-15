@@ -1,13 +1,56 @@
-import React, { useState } from 'react';
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import React, {useEffect, useState} from 'react';
+import {
+    DragDropContext,
+    Droppable,
+    Draggable,
+    DroppableStateSnapshot,
+    DropResult,
+    DraggableProvided
+} from '@hello-pangea/dnd';
 import {useLocation} from "react-router-dom";
 
 const Rank = () => {
     const location = useLocation();
     const ideas_list = location.state?.ideas_list || [];
 
-    const [ideas, setIdeas] = useState<string[]>([]);
+    const [ideas, setIdeas] = useState<string[]>(ideas_list);
+    const [isWaiting, setIsWaiting] = useState<boolean>(false);
 
+    const reorder = (list: string[], startIndex: number, endIndex: number): string[] => {
+        const result = Array.from(list);
+        const [removed] = result.splice(startIndex, 1);
+        result.splice(endIndex, 0, removed);
+        return result;
+    };
+
+    const onDragEnd = (result: DropResult) => { // DropResult for type safety (?)
+        // dropped outside the list
+        if (!result.destination) {
+            return;
+        }
+
+        const updatedIdeas = reorder(
+            ideas, // Use the state variable directly
+            result.source.index,
+            result.destination.index
+        );
+
+        setIdeas(updatedIdeas);
+    };
+    
+    const handleConfirm = () => {
+        setIsWaiting(true);
+        sessionStorage.setItem("waitingOnRankScreen", "true");
+        // TODO
+    }
+
+    useEffect(() => {
+        if (sessionStorage.getItem("waitingOnRankScreen") === "true") {
+            setIsWaiting(true);
+        }
+    })
+
+    // @ts-ignore
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4 font-inter">
             <h1 className="text-4xl mb-8 text-center">
@@ -15,30 +58,57 @@ const Rank = () => {
             </h1>
 
             <div className="w-full max-w-md">
-                {ideas_list.length > 0 ? (
-                    <ul className="space-y-3">
-                        {ideas_list.map((idea: string, index: number) => (
-                            <li
-                                key={index}
-                                className="bg-white p-4 rounded-lg shadow-sm flex items-center justify-between w-full border border-gray-200 hover:border-indigo-500 transition-colors duration-200"
-                            >
-                                <span className="text-gray-700 text-lg flex items-center">
-                                    <span className="text-indigo-500 mr-3 font-bold">
-                                        {index + 1}.
-                                    </span>
-                                    {idea}
-                                </span>
-                            </li>
-                        ))}
-                    </ul>
+                {ideas.length > 0 ? (
+                    <DragDropContext onDragEnd={onDragEnd}>
+                        {/* just ignore this underline */}
+                        <Droppable droppableId="ideas">
+                            {(provided, snapshot)  => (
+                            <ul {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
+                                {ideas.map((idea: string, index: number) => (
+                                    <Draggable key={idea} draggableId={idea} index={index} isDragDisabled={isWaiting}
+                                    >
+                                        {(provided: DraggableProvided) => (
+                                            <li ref={provided.innerRef}
+                                                {...provided.draggableProps}
+                                                {...provided.dragHandleProps}
+                                                className="bg-white p-4 rounded-lg shadow-sm flex items-center justify-between w-full border border-gray-200 hover:border-indigo-500 transition-colors duration-200"
+                                            >
+                                                <span className="text-gray-700 text-lg flex items-center">
+                                                    <span className="text-indigo-500 mr-3 font-bold">
+                                                        {index + 1}.
+                                                    </span>
+                                                    {idea}
+                                                </span>
+                                            </li>
+                                        )}
+                                    </Draggable>
+                                ))}
+                                {/* do keep this here */}
+                                {provided.placeholder}
+                            </ul>
+                            )}
+                        </Droppable>
+                    </DragDropContext>
                 ) : (
                     <div className="text-center text-gray-500">
                         No ideas to display
                     </div>
                 )}
             </div>
+            <div className="mt-6 flex justify-center">
+                <button
+                    onClick={handleConfirm}
+                    disabled={isWaiting}
+                    className={`px-8 py-4 font-semibold rounded-lg transition-all duration-200 ${
+                        isWaiting 
+                        ? 'bg-green-200 text-green-700 cursor-not-allowed opacity-70' 
+                        : 'bg-green-700 text-white hover:bg-green-600'
+                    }`}
+                >
+                    {isWaiting ? 'Waiting...' : 'Confirm'}
+                </button>
+            </div>
         </div>
-
     );
 };
 

@@ -39,7 +39,7 @@ const RoomCode = () => {
                 <div className="flex flex-col items-center">
                     <input
                         placeholder="Room Code"
-                        className="w-full px-4 py-2 border font-bricolage border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        className="w-full max-w-md px-6 py-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-lg transition-all duration-300 ease-in-out"
                         onChange={(event) => {
                             setRoomID(event.target.value);
                             sessionStorage.setItem("roomID", event.target.value);
@@ -49,10 +49,10 @@ const RoomCode = () => {
                 </div>
 
                 <div className="flex justify-center space-x-4">
-                    <button onClick={backToStart} className="rounded-md bg-red-600 px-4 py-2 font-semibold text-white shadow-md hover:bg-red-700 focus:ring-2 focus:ring-green-500 focus:outline-none">
+                    <button onClick={backToStart} className="rounded-md bg-red-600 px-6 py-4 font-semibold text-white shadow-md hover:bg-red-700 focus:ring-2 focus:ring-green-500 focus:outline-none">
                         Back
                     </button>
-                    <button onClick={joinRoom} className="rounded-md bg-green-600 px-4 py-2 font-semibold text-white shadow-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:outline-none">
+                    <button onClick={joinRoom} className="rounded-md bg-green-600 px-6 py-4 font-semibold text-white shadow-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:outline-none">
                         Join Room
                     </button>
                 </div>

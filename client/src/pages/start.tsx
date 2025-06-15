@@ -43,20 +43,20 @@ const Start: React.FC = () => {
     return (
         <div className="min-h-screen flex flex-col items-center justify-start bg-gray-50">
             <div className="mt-24 space-y-8">
-                <h1 className="text-2xl font-bricolage font-bold text-center text-indigo-500">Indecisive?</h1>
+                <h1 className="text-2xl font-bold text-center ">Indecisive?</h1>
                 <div className="flex flex-col items-center">
                     <input
                         placeholder="Username"
-                        className="w-full px-4 py-2 border font-bricolage border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        className="w-full max-w-md px-6 py-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-lg transition-all duration-300 ease-in-out"
                         onChange={(event) => setUsername(event.target.value)}
                     />
                     <h4 className="mt-4">{error}</h4>
                 </div>
                 <div className="flex justify-center space-x-4">
-                    <button onClick={createRoom} className="focus:ring-opacity-75 rounded-md bg-blue-600 px-4 py-2 font-semibold text-white shadow-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <button onClick={createRoom} className="focus:ring-opacity-75 rounded-md bg-blue-600 px-6 py-4 font-semibold text-white shadow-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none">
                         Create Room
                     </button>
-                    <button onClick={roomCodeScreen} className="rounded-md bg-green-600 px-4 py-2 font-semibold text-white shadow-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:outline-none">
+                    <button onClick={roomCodeScreen} className="rounded-md bg-green-600 px-6 py-4 font-semibold text-white shadow-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:outline-none">
                         Join Room
                     </button>
                 </div>

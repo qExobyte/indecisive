@@ -4,5 +4,8 @@
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
+  },
+  "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1"
   }
 }
