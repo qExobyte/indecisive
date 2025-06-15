@@ -30,6 +30,7 @@ const RoomCode = () => {
 
     const backToStart = () => {
         navigate('/');
+        sessionStorage.removeItem("roomID");
     };
 
     return (

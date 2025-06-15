@@ -2,15 +2,16 @@ import React, {useState, KeyboardEvent, DragEvent, useEffect} from 'react';
 import TrashIcon from '../assets/trash.svg';
 import {socket} from "../socket";
 import {useNavigate} from "react-router-dom";
+import {useUser} from "../userContext";
 
 const Write = () => {
     // current idea input
     const [ideaInput, setIdeaInput] = useState<string>('');
     // list of ideas
-    const [ideas, setIdeas] = useState<string[]>([]);
     const [isDraggingOverTrash, setIsDraggingOverTrash] = useState<boolean>(false);
     const [timerCount, setTimerCount] = useState<number>(30);
     const navigate = useNavigate();
+    const {ideas, setIdeas} = useUser();
 
     // Function to handle the input field's key down events
     const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -19,6 +20,8 @@ const Write = () => {
             // ...ideas = "idea1", "idea2", etc
             // so now we set the ideas list to a list with [all those elements, "idea n"]
             setIdeas([...ideas, ideaInput.trim()]);
+            // must stringify since sessionstorage only stores strings
+            sessionStorage.setItem("ideas", JSON.stringify([...ideas, ideaInput.trim()]));
             setIdeaInput('');
         }
     };
@@ -56,18 +59,30 @@ const Write = () => {
         // Get the index of the dragged item
         const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
 
-        // Filter out the dragged item from the ideas list
-        setIdeas(currentIdeas => currentIdeas.filter((_, i) => i !== draggedIndex));
+        setIdeas((currentIdeas: string[]) => {
+            const newIdeas = currentIdeas.filter((_, i) => i !== draggedIndex);
+            sessionStorage.setItem("ideas", JSON.stringify(newIdeas));
+            return newIdeas;
+        });
     };
 
     useEffect(() => {
+        const storedIdeas = JSON.parse(sessionStorage.getItem("ideas") || "[]");
+        setIdeas(storedIdeas);
+
         socket.on("update_timer", (timerCount: number) => {
             setTimerCount(timerCount);
         });
 
         socket.on("open_rank_screen", (roomID) => {
             navigate(`/rank/${roomID}`);
+            sessionStorage.removeItem("ideas");
         });
+
+        return () => {
+            socket.off("update_timer");
+            socket.off("open_rank_screen");
+        }
     }, [])
 
     return (

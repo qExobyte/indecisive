@@ -9,6 +9,8 @@ interface UserContextType {
     setUsername: (value: string) => void;
     roomID: string;
     setRoomID: (value: string) => void;
+    ideas: string[];
+    setIdeas: (value: string[] | ((prevState: string[]) => string[])) => void;
 }
 
 const UserContext = createContext<UserContextType | null>(null);
@@ -18,9 +20,10 @@ export const UserProvider = ({ children }: { children : ReactNode }) => {
     const [username, setUsername] = useState('');
     const [roomID, setRoomID] = useState('');
     const [id, setID] = useState<string | undefined>(undefined);
+    const [ideas, setIdeas] = useState<string[]>([]);
 
     return (
-        <UserContext.Provider value={{ id, setID, username, setUsername, roomID, setRoomID }}>
+        <UserContext.Provider value={{ id, setID, username, setUsername, roomID, setRoomID, ideas, setIdeas }}>
             {children}
         </UserContext.Provider>
     );
