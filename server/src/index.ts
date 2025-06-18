@@ -96,7 +96,7 @@ io.on("connection", (socket: Socket) => {
 
    // because we might be reconnecting
     if (!player_dict[socket.id]) {
-        console.log("Should NOT print on refresh");
+        console.log(`Creating new player info for ${socket.id}`);
         player_dict[socket.id] = {
             username: "",
             isHost: false,
@@ -132,9 +132,10 @@ io.on("connection", (socket: Socket) => {
             socket.emit("fail_to_create_room");
        }
        else {
-           console.log(`Creating room ${roomCounter}`);
            const roomID = String(roomCounter);
            socket.join(roomID);
+           console.log(`Socket ID ${socket.id} is trying to create room ${roomID}`);
+           console.log(`Player dict: ${JSON.stringify(player_dict, null, 2)}`);
            player_dict[socket.id].username = username;
            player_dict[socket.id].roomID = roomID;
 
@@ -188,6 +189,7 @@ io.on("connection", (socket: Socket) => {
 
    socket.on("start_writing", (roomID: string) => {
        timers[roomID] = {timerID: undefined, timerCount: TIMER_COUNT};
+       room_dict[roomID].can_join = false;
        io.to(roomID).emit("open_write_screen", roomID);
        startTimer(roomID);
    });
@@ -259,7 +261,7 @@ io.on("connection", (socket: Socket) => {
                     updatePlayerList(player_room);
                 }
             }
-        }, 2000);
+        }, 500);
     });
 });
 

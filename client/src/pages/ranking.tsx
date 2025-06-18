@@ -58,7 +58,7 @@ const Rank = () => {
             });
             sessionStorage.removeItem("waitingOnRankScreen");
         });
-    }, [navigate])
+    }, [socket, navigate])
 
     // @ts-ignore
     return (
