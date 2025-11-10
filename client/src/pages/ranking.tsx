@@ -61,6 +61,7 @@ const Rank = () => {
     }, [socket, navigate])
 
     // @ts-ignore
+    // @ts-ignore
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4 font-inter">
             <h1 className="text-4xl mb-8 text-center">
@@ -93,7 +94,6 @@ const Rank = () => {
                                         )}
                                     </Draggable>
                                 ))}
-                                {/* do keep this here */}
                                 {provided.placeholder}
                             </ul>
                             )}

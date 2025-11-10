@@ -29,7 +29,7 @@ let roomCounter = 1000;
 
 // key: roomID -> val: {timerID, timerCount}
 const timers: {[key: string] : {timerID: NodeJS.Timeout | number | undefined | string, timerCount: number}} = {};
-const TIMER_COUNT = 15;
+const TIMER_COUNT = 30;
 
 const player_dict: {[key: string] : Player} = {};
 

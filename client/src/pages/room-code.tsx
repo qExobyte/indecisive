@@ -9,7 +9,7 @@ const RoomCode = () => {
     const [error, setError] = useState("");
 
     useEffect( () => {
-        socket.on("send_to_room", (room)=> {
+        socket.on("send_to_room", (room)=> {    
             navigate(`/lobby/${room}`);
         });
 
