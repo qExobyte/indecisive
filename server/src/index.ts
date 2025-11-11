@@ -14,13 +14,29 @@ interface Player {
     roomID?: string; // ? means can be undefined
 }
 
+enum RankingAlgorithm {
+    CONDORCET = 'CONDORCET',
+    BORDA_COUNT = 'BORDA_COUNT'
+    // TODO probabilistic (...based on borda count points?)
+}
+
 interface RoomData {
     player_IDs: string[];  // set of player IDs (then use lookup table)
     can_join: boolean;
     ideas_list: string[];
     expected_idea_responses: number;
     expected_rank_responses: number;
-    points_dict: {[key: string] : number};  // ideas -> points (where points are inverse of ranking)
+    rankings: string[][];
+    algorithm: RankingAlgorithm;
+    rank_dict: {[key: string] : number}; // ideas -> rank
+    points_dict: {[key: string] : number};  // ideas -> points (which may not be the same as rank!)
+}
+
+// for condorcet
+interface PairwiseResult {
+    winner: string;
+    loser: string;
+    margin: number;
 }
 
 // roomID --> roomData
@@ -145,7 +161,10 @@ io.on("connection", (socket: Socket) => {
                ideas_list: [],
                expected_idea_responses: 0,
                expected_rank_responses: 0,
-               points_dict: {}
+               rank_dict: {},
+               points_dict: {},
+               rankings: [],
+               algorithm: RankingAlgorithm.CONDORCET
            };
 
            socket.emit("room_created", roomID);
@@ -199,6 +218,7 @@ io.on("connection", (socket: Socket) => {
           console.log("Room was not given timer"); // really should not happen
           return;
       }
+      io.to(roomID).emit('update_timer', timers[roomID].timerCount);
       timers[roomID].timerID = setInterval(() => {
           timers[roomID].timerCount--;
           io.to(roomID).emit('update_timer', timers[roomID].timerCount);
@@ -226,22 +246,188 @@ io.on("connection", (socket: Socket) => {
        }
    });
 
-   socket.on("submit_rank", (roomID, rank_list: string[]) => {
-       room_dict[roomID].expected_rank_responses--;
-       // points awarded in reverse of rank (ex. 5 items: 1st is +5, 2nd is +4 etc.)
-       for (let i = 0; i < rank_list.length; i++) {
-           console.log(`${i}th item: ${rank_list[i]}`);
-           const idea = rank_list[i];
-           const points = rank_list.length - i;
-           // handle if item DNE yet
-           room_dict[roomID].points_dict[idea] ??= 0;
-           room_dict[roomID].points_dict[idea] += points;
-           console.log(`points for ${idea}: ${points}`);
-       }
-       if (room_dict[roomID].expected_rank_responses === 0) {
-           io.to(roomID).emit('open_results_screen', roomID, room_dict[roomID].points_dict);
-       }
-   });
+    // a singular player has sent their rankings
+    // we must incorporate that into aggregate rank and then only run the algo when all rankings are submitted
+    socket.on("submit_rank", (roomID, rank_list: string[]) => {
+        room_dict[roomID].expected_rank_responses--;
+        room_dict[roomID].rankings.push(rank_list);
+        if (room_dict[roomID].expected_rank_responses === 0) {
+            rankAlgorithm(roomID);
+        }
+    });
+
+    function rankAlgorithm(roomID: any) {
+        const rankings: string[][] = room_dict[roomID].rankings;
+        // these algorithms all modify points_dict in-place
+        const algorithm = room_dict[roomID].algorithm;
+        switch(algorithm) {
+            case 'CONDORCET':
+                condorcet(roomID, rankings);
+                break;
+            case 'BORDA_COUNT':
+                bordaCountAlgorithm(roomID, rankings);
+                break;
+            default:
+                condorcet(roomID, rankings);
+        }
+        io.to(roomID).emit('open_results_screen', roomID, room_dict[roomID].points_dict, room_dict[roomID].rank_dict);
+    }
+
+    function condorcet(roomID: any, rankings: string[][]) {
+        const ideas_list = room_dict[roomID].ideas_list;
+        const pairwiseResults = calculatePairwiseResults(ideas_list, rankings);
+        const sortedVictories = sortVictories(pairwiseResults);
+        const lockedPairs = lockInCycleFreePairs(sortedVictories);
+        const rankedDict = getFinalRanking(ideas_list, lockedPairs);
+        room_dict[roomID].rank_dict = rankedDict;
+        // include points from borda count, while ranking with condorcet
+        bordaPoints(roomID, rankings);
+    }
+
+    function calculatePairwiseResults (ideas_list: string[], rankings: string[][]) : PairwiseResult[] {
+        const results : PairwiseResult[] = [];
+        // looping through every PAIR of ideas
+        for (let i = 0; i < ideas_list.length; i++) {
+            for (let j = 0; j < ideas_list.length; j++) {
+                const itemA : string = ideas_list[i];
+                let aVotes : number = 0;
+                const itemB : string = ideas_list[j];
+                let bVotes : number = 0;
+                // now loop through every set of rankings
+                for (let v = 0; v < rankings.length; v++) {
+                    const indexA = rankings[v].indexOf(itemA);
+                    const indexB = rankings[v].indexOf(itemB);
+                    if (indexA < indexB) {
+                        aVotes++;
+                    } else {
+                        bVotes++;
+                    }
+                }
+                // record win, loss, and margin
+                // need all 3 for tiebreaking
+                if (aVotes !== bVotes) {
+                    const winner = aVotes > bVotes ? itemA : itemB;
+                    const loser = aVotes > bVotes ? itemB : itemA;
+                    const margin = Math.abs(aVotes - bVotes);
+                    results.push({ winner, loser, margin });
+                }
+            }
+        }
+        return results;
+    }
+
+    function sortVictories(results: PairwiseResult[]): PairwiseResult[] {
+        return results.sort((a, b) => b.margin - a.margin);
+    }
+
+    // a bit verbose, but that's what we're doing
+    function lockInCycleFreePairs(sortedVictories: PairwiseResult[]): PairwiseResult[] {
+        const lockedPairs: PairwiseResult[] = [];
+        for (const victory of sortedVictories) {
+            if (!detectCycles(victory.loser, victory.winner, lockedPairs)) {
+                lockedPairs.push(victory); // lock it innnnn
+            }
+        }
+        return lockedPairs;
+    }
+
+    // detects if an item lost a matchup but still has a chance of beating the other item transitively
+    // ex.) A > B , B > C , C > A -- who wins??
+    // returns true if one of these cycles DOES occur
+    function detectCycles(start: string, end: string, lockedPairs: PairwiseResult[]): boolean {
+        // base case
+        if (start === end) {
+            return true;
+        }
+
+        // get all items that 'start' defeats in the locked pairs
+        const winners = lockedPairs
+            .filter(pair => pair.winner === start)
+            .map(pair => pair.loser);
+
+        // recursively check paths of defeated candidates (dfs)
+        for (const next of winners) {
+            if (detectCycles(next, end, lockedPairs)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // just trust bro
+    function getFinalRanking(items: string[], lockedPairs: PairwiseResult[]) {
+        const inDegree = new Map<string, number>();
+        const adjList = new Map<string, string[]>(); // Adjacency List (Winner -> [Loser1, Loser2, ...])
+        const finalRanking : {[key: string] : number} = {};
+
+        // 1. Initialize In-Degrees and Adjacency List
+        for (const candidate of items) {
+            inDegree.set(candidate, 0);
+            adjList.set(candidate, []);
+        }
+
+        for (const pair of lockedPairs) {
+            // Build the graph: Winner -> Loser
+            adjList.get(pair.winner)?.push(pair.loser);
+            // Count incoming edges (defeats)
+            inDegree.set(pair.loser, inDegree.get(pair.loser)! + 1);
+        }
+
+        // 2. Initialize Queue with candidates who have In-Degree 0 (the potential winners)
+        const queue: string[] = items.filter(c => inDegree.get(c) === 0);
+
+        let currentRank = 1;
+        let rankQueue: string[] = []; // To handle candidates tied for the same rank
+
+        // 3. Process and Reduce
+        while (queue.length > 0 || rankQueue.length > 0) {
+            if (rankQueue.length === 0) {
+                // Move all current winners (queue) into the rankQueue for consistent ranking
+                rankQueue = queue.splice(0, queue.length);
+            }
+
+            const current = rankQueue.shift()!; // Get the next candidate to rank
+            finalRanking[current] ??= currentRank;
+
+            // 4. Reduce In-Degrees of defeated candidates
+            const defeatedCandidates = adjList.get(current) || [];
+            for (const next of defeatedCandidates) {
+                inDegree.set(next, inDegree.get(next)! - 1);
+
+                // If in-degree drops to 0, they are next in line to win
+                if (inDegree.get(next) === 0) {
+                    queue.push(next);
+                }
+            }
+
+            // Only increment rank after all tied candidates at the current level are processed
+            if (rankQueue.length === 0) {
+                currentRank++;
+            }
+        }
+
+        return finalRanking;
+    }
+
+    // deprecated algorithm because it's LAME and BORING
+    function bordaCountAlgorithm(roomID: any, rankings: string[][]) {
+        bordaPoints(roomID, rankings);
+        const sortedPointsArray = Object.entries(room_dict[roomID].points_dict).sort((a, b) => b[1] - a[1]);
+        sortedPointsArray.forEach(([idea, pts], index) => {
+            room_dict[roomID].rank_dict[idea] = index + 1;
+        })
+    }
+
+    function bordaPoints(roomID: any, rankings: string[][]) {
+        for (let i = 0; i < rankings.length; i++) {
+            for (let j = 0; j < rankings[0].length; j++) {
+                const idea = rankings[i][j];
+                const points = rankings[i].length - j;
+                room_dict[roomID].points_dict[idea] ??= 0;
+                room_dict[roomID].points_dict[idea] += points;
+            }
+        }
+    }
 
    // when this is called, socket is already undefined
     socket.on("disconnect", () => {

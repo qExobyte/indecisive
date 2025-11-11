@@ -52,15 +52,16 @@ const Rank = () => {
             setIsWaiting(true);
         }
 
-        socket.on("open_results_screen", (roomID, points_dict : {[key: string] : number}) => {
+        socket.on("open_results_screen", (roomID, points_dict : {[key: string] : number}, rank_dict : {[key: string] : number}) => {
             navigate(`/results/${roomID}`, {
-                state: { points_dict }
+                state: { points_dict, rank_dict }
             });
             sessionStorage.removeItem("waitingOnRankScreen");
         });
     }, [socket, navigate])
 
     // @ts-ignore
+    const points_dict: { [key: string]: number } = location.state?.points_dict || {};
     // @ts-ignore
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4 font-inter">

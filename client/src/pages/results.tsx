@@ -21,12 +21,13 @@ const BronzeMedal = () => (
 
 const Results = () => {
     const location = useLocation();
-    const points_dict: { [key: string]: number } = location.state?.points_dict || {};
+    const points_dict: { [key: string]: number } = location.state?.points_dict || {};  // unsorted
+    const rank_dict: { [key: string]: number } = location.state?.rank_dict || {}; // unsorted? maybe?
     const dictIsEmpty = Object.keys(points_dict).length === 0;
 
-    // convert dictionary to an array of [key, value] pairs and sort them
-    const sortedPoints = Object.entries(points_dict).sort(([, valueA], [, valueB]) => valueB - valueA);
-
+    console.log(rank_dict);
+    const rankedItems = Object.entries(rank_dict).sort(([, valueA], [, valueB]) => valueA - valueB);
+    console.log(rankedItems);
     const navigate = useNavigate();
 
     const backToLobby = () => {
@@ -41,33 +42,41 @@ const Results = () => {
                     {dictIsEmpty ? (
                         <p className="text-center text-gray-500 text-lg">No items to display.</p>
                     ) : (
-                        <ul className="list-none p-0">
-                            {/* Iterate over sorted key-value pairs */}
-                            {sortedPoints.map(([key, value], index) => (
-                                <li
-                                    key={key}
-                                    className={`
-                                        flex items-center justify-between
-                                        py-3 px-4 mb-2 rounded-lg
-                                        ${index === 0 ? 'bg-yellow-100 border-l-4 border-yellow-500' : ''}
-                                        ${index === 1 ? 'bg-gray-100 border-l-4 border-gray-400' : ''}
-                                        ${index === 2 ? 'bg-amber-50 border-l-4 border-amber-700' : ''}
-                                        ${index > 2 ? 'bg-white border-b border-gray-200' : ''}
-                                        shadow-sm
-                                    `}
-                                >
-                                    <div className="flex items-center">
-                                        {index === 0 && <GoldMedal />}
-                                        {index === 1 && <SilverMedal />}
-                                        {index === 2 && <BronzeMedal />}
-                                        <span className="text-lg font-medium text-gray-800">
-                                            {index + 1}. {key}
-                                        </span>
-                                    </div>
-                                    <span className="text-xl font-bold text-gray-900">{value}</span>
-                                </li>
-                            ))}
-                        </ul>
+                        <>
+                            <div className="flex justify-between mb-2 px-4">
+                                <span className="text-sm text-gray-500"></span>
+                                <div className="text-right">
+                                    <div className="text-sm text-gray-500">raw points</div>
+                                    <div className="text-sm text-gray-400">(borda count)</div>
+                                </div>
+                            </div>
+                            <ul className="list-none p-0">
+                                {rankedItems.map(([key, value], index) => (
+                                    <li
+                                        key={key}
+                                        className={`
+                                            flex items-center justify-between
+                                            py-3 px-4 mb-2 rounded-lg
+                                            ${index === 0 ? 'bg-yellow-100 border-l-4 border-yellow-500' : ''}
+                                            ${index === 1 ? 'bg-gray-100 border-l-4 border-gray-400' : ''}
+                                            ${index === 2 ? 'bg-amber-50 border-l-4 border-amber-700' : ''}
+                                            ${index > 2 ? 'bg-white border-b border-gray-200' : ''}
+                                            shadow-sm
+                                        `}
+                                    >
+                                        <div className="flex items-center">
+                                            {index === 0 && <GoldMedal />}
+                                            {index === 1 && <SilverMedal />}
+                                            {index === 2 && <BronzeMedal />}
+                                            <span className="text-lg font-medium text-gray-800">
+                                                {index + 1}. {key}
+                                            </span>
+                                        </div>
+                                        <span className="text-xl font-bold text-gray-900">{points_dict[key]}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </>
                     )}
                 </div>
             </div>

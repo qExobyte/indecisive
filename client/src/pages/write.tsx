@@ -9,7 +9,7 @@ const Write = () => {
     const [ideaInput, setIdeaInput] = useState<string>('');
     // list of ideas
     const [isDraggingOverTrash, setIsDraggingOverTrash] = useState<boolean>(false);
-    const [timerCount, setTimerCount] = useState<number>(30);
+    const [timerCount, setTimerCount] = useState<number>();
     const navigate = useNavigate();
     const {ideas, setIdeas} = useUser();
 
